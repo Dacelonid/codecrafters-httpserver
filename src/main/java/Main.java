@@ -1,22 +1,9 @@
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.ServerSocket;
-import java.net.Socket;
+import server.MyServerImpl;
 
 public class Main {
-  public static void main(String[] args) {
-     try(ServerSocket serverSocket = new ServerSocket(4221)) {
-       serverSocket.setReuseAddress(true);
-
-       Socket accept = serverSocket.accept();
-       OutputStream outputStream = accept.getOutputStream();
-       outputStream.write("Hello World".getBytes());
-       System.out.println("accepted new connection");
-
-
-
-     } catch (IOException e) {
-       System.out.println("IOException: " + e.getMessage());
-     }
-  }
+    public static void main(String[] args) {
+        int port = 4221;
+        Thread thread = new Thread(new MyServerImpl(port));
+        thread.start();
+    }
 }
