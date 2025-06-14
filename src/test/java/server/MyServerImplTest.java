@@ -1,29 +1,73 @@
 package server;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.net.URI;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class MyServerImplTest {
-    @Test
-    public void testRun() throws IOException, URISyntaxException {
+
+    private MyServerImpl myServer;
+    private boolean local;
+
+    @BeforeEach
+    public void setup() {
+        local = Boolean.parseBoolean(System.getenv("LOCAL"));
         int port = 4221;
-        Thread thread = new Thread(new MyServerImpl(port));
+        myServer = new MyServerImpl(port);
+        Thread thread = new Thread(myServer);
         thread.start();
-
-        URL url = new URI("http://localhost:4221").toURL();
-        HttpURLConnection con = (HttpURLConnection) url.openConnection();
-        con.setRequestMethod("GET");
-        con.setDoOutput(true);
-
-        BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
-        String line = in.readLine();
-        assertEquals("Hello World", line);
     }
 
+    @AfterEach
+    public void tearDown() {
+        myServer.stop();
+    }
+
+    @Test
+    public void test200Response() throws IOException, URISyntaxException {
+        if(!local) {return;}
+            URL url = new URI("http://localhost:4221").toURL();
+            HttpURLConnection con = openConnection(url);
+
+            String line = readFromConnection(con);
+            assertEquals("Hello World", line);
+    }
+
+    @Test
+    public void test200And404Response() throws IOException, URISyntaxException {
+        if(!local) {return;}
+        String validUrl = "http://localhost:4221/index.html";
+        String invalidUrl = "http://localhost:4221/gjhksdgaku.html";
+        URL goodUrl = new URI(validUrl).toURL();
+        URL badUrl = new URI(invalidUrl).toURL();
+
+        HttpURLConnection goodcon = openConnection(goodUrl);
+        assertEquals(200, goodcon.getResponseCode());
+        assertEquals("Hello World", readFromConnection(goodcon));
+
+        HttpURLConnection badcon = openConnection(badUrl);
+        assertEquals(404, badcon.getResponseCode());
+    }
+
+    private static HttpURLConnection openConnection(URL goodUrl) throws IOException {
+        HttpURLConnection con = (HttpURLConnection) goodUrl.openConnection();
+        con.setRequestMethod("GET");
+        con.setDoOutput(true);
+        return con;
+    }
+
+
+    private String readFromConnection(HttpURLConnection con) throws IOException {
+        return new BufferedReader(new InputStreamReader(con.getInputStream())).readLine();
+    }
 }
