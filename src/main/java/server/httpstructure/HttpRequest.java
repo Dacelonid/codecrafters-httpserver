@@ -4,15 +4,19 @@ import java.util.Arrays;
 
 public class HttpRequest {
     private final RequestLine requestLine;
+
     private final HttpHeader httpHeader;
     private final String body;
-
     private HttpRequest(RequestLine requestLine, HttpHeader httpHeader, String body) {
         this.requestLine = requestLine;
         this.httpHeader = httpHeader;
         this.body = body;
     }
 
+
+    public RequestLine getRequestLine() {
+        return requestLine;
+    }
 
     public String getTarget() {
         return requestLine.getTarget();

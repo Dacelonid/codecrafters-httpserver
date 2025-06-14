@@ -44,6 +44,25 @@ public class MyServerImplTest {
 
         String line = readFromConnection(con);
         assertEquals("OK", line);
+        assertEquals("HTTP/1.1 200 OK", con.getHeaderField(0));
+        assertEquals("text/plain", con.getHeaderField("Content-Type"));
+        assertEquals("2", con.getHeaderField("Content-Length"));
+    }
+    @Test
+    public void unknownMethodGetForbidden() throws IOException, URISyntaxException {
+        if (!local) {
+            return;
+        }
+        URL url = new URI("http://localhost:4221").toURL();
+        HttpURLConnection con = (HttpURLConnection) url.openConnection();
+        con.setRequestMethod("TRACE"); //Valid HTTP Method, but not supported by our code
+        con.setDoOutput(true);
+
+        String line = readFromConnection(con);
+        assertEquals("Not Allowed", line);
+        assertEquals("HTTP/1.1 405 Not Allowed", con.getHeaderField(0));
+        assertEquals("text/plain", con.getHeaderField("Content-Type"));
+        assertEquals("11", con.getHeaderField("Content-Length"));
     }
 
     @Test
@@ -53,9 +72,12 @@ public class MyServerImplTest {
         }
         URL url = new URI("http://localhost:4221/echo/something").toURL();
         HttpURLConnection con = openConnection(url);
-
         String line = readFromConnection(con);
         assertEquals("something", line);
+        assertEquals("HTTP/1.1 200 OK", con.getHeaderField(0));
+        assertEquals("text/plain", con.getHeaderField("Content-Type"));
+        assertEquals("9", con.getHeaderField("Content-Length"));
+
     }
 
     @Test
@@ -71,9 +93,16 @@ public class MyServerImplTest {
         HttpURLConnection goodcon = openConnection(goodUrl);
         assertEquals(200, goodcon.getResponseCode());
         assertEquals("OK", readFromConnection(goodcon));
+        assertEquals("text/plain", goodcon.getHeaderField("Content-Type"));
+        assertEquals("2", goodcon.getHeaderField("Content-Length"));
+        assertEquals("HTTP/1.1 200 OK", goodcon.getHeaderField(0));
 
         HttpURLConnection badcon = openConnection(badUrl);
         assertEquals(404, badcon.getResponseCode());
+        assertEquals("Not Found", readFromConnection(badcon));
+        assertEquals("HTTP/1.1 404 Not Found", badcon.getHeaderField(0));
+        assertEquals("text/plain", badcon.getHeaderField("Content-Type"));
+        assertEquals("9", badcon.getHeaderField("Content-Length"));
     }
 
     @Test
@@ -88,6 +117,9 @@ public class MyServerImplTest {
         assertEquals(200, goodcon.getResponseCode());
         String actual = readFromConnection(goodcon);
         assertEquals("Java/24.0.1", actual);
+        assertEquals("HTTP/1.1 200 OK", goodcon.getHeaderField(0));
+        assertEquals("text/plain", goodcon.getHeaderField("Content-Type"));
+        assertEquals("11", goodcon.getHeaderField("Content-Length"));
 
     }
 
@@ -102,6 +134,9 @@ public class MyServerImplTest {
         HttpURLConnection goodcon = openConnection(goodUrl);
         assertEquals(404, goodcon.getResponseCode());
         assertEquals("Not Found", readFromConnection(goodcon));
+        assertEquals("HTTP/1.1 404 Not Found", goodcon.getHeaderField(0));
+        assertEquals("text/plain", goodcon.getHeaderField("Content-Type"));
+        assertEquals("9", goodcon.getHeaderField("Content-Length"));
     }
     @Test
     public void fileHandlingFileIsFound() throws IOException, URISyntaxException {
@@ -114,12 +149,14 @@ public class MyServerImplTest {
         HttpURLConnection goodcon = openConnection(goodUrl);
         assertEquals(200, goodcon.getResponseCode());
         assertEquals("apple", readFromConnection(goodcon));
+        assertEquals("HTTP/1.1 200 OK", goodcon.getHeaderField(0));
+        assertEquals("application/octet-stream", goodcon.getHeaderField("Content-Type"));
+        assertEquals("5", goodcon.getHeaderField("Content-Length"));
     }
 
     private static HttpURLConnection openConnection(URL goodUrl) throws IOException {
         HttpURLConnection con = (HttpURLConnection) goodUrl.openConnection();
         con.setRequestMethod("GET");
-
         con.setDoOutput(true);
         return con;
     }
