@@ -1,7 +1,8 @@
 package server;
 
-import server.handlers.*;
-import server.httpUtils.HttpMethod;
+import server.handlers.GetHandler;
+import server.handlers.MethodNotAllowedHandler;
+import server.handlers.PostHandler;
 import server.httpstructure.HttpRequest;
 import server.httpstructure.HttpResponse;
 
@@ -11,10 +12,11 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import static server.httpUtils.HttpConstants.CONTENT_LENGTH;
 
 
 public class MyServerImpl implements Runnable {
@@ -78,56 +80,50 @@ public class MyServerImpl implements Runnable {
     private static List<String> readLines(BufferedReader reader) throws IOException {
         StringBuilder requestBuilder = new StringBuilder();
         String line;
+        int contentLength = 0;
 
-        // Read headers
+        // Read headers and parse Content-Length
         while ((line = reader.readLine()) != null && !line.isEmpty()) {
             requestBuilder.append(line).append("\r\n");
+            if (line.toLowerCase().startsWith(CONTENT_LENGTH.toLowerCase())) {
+                try {
+                    contentLength = Integer.parseInt(line.substring(CONTENT_LENGTH.length()).trim());
+                } catch (NumberFormatException ignored) {
+                }
+            }
         }
 
         // End of headers
         requestBuilder.append("\r\n");
 
-        // Look for Content-Length to determine how much body to read
-        int contentLength = 0;
-        for (String headerLine : requestBuilder.toString().split("\r\n")) {
-            if (headerLine.toLowerCase().startsWith("content-length:")) {
-                try {
-                    contentLength = Integer.parseInt(headerLine.substring("content-length:".length()).trim());
-                } catch (NumberFormatException ignored) {}
-                break;
-            }
-        }
-
+        // Read body if present
         if (contentLength > 0) {
             char[] bodyChars = new char[contentLength];
             int totalRead = 0;
             while (totalRead < contentLength) {
                 int read = reader.read(bodyChars, totalRead, contentLength - totalRead);
-                if (read == -1) break; // EOF
+                if (read == -1) break;
                 totalRead += read;
             }
-            requestBuilder.append(new String(bodyChars, 0, totalRead));
+            requestBuilder.append(bodyChars, 0, totalRead);
         }
 
         return List.of(requestBuilder.toString());
     }
 
-    private HttpResponse handleLine(String s) {
-        HttpRequest request = HttpRequest.from(s);
-        if(request.getRequestLine().getMethod() == HttpMethod.GET) {
-            GetHandler getHandler = new GetHandler();
-            Handler handler = getHandler.chooseHandler(request);
-            return handler.handle(request);
-        }else if(request.getRequestLine().getMethod() == HttpMethod.POST){
-            PostHandler postHandler = new PostHandler();
-            Handler handler = postHandler.chooseHandler(request);
-            return handler.handle(request);
+    private HttpResponse handleLine(String requestString) {
+        HttpRequest request = HttpRequest.from(requestString);
+        var requestLine = request.getRequestLine();
+        if (requestLine == null) {
+            return new MethodNotAllowedHandler().handle(request);
         }
-        return new MethodNotAllowedHandler().handle(request);
+
+        return switch (requestLine.getMethod()) {
+            case GET -> new GetHandler().chooseHandler(request).handle(request);
+            case POST -> new PostHandler().chooseHandler(request).handle(request);
+            default -> new MethodNotAllowedHandler().handle(request);
+        };
     }
-
-
-
 
 
 }

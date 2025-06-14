@@ -33,8 +33,6 @@ public class PostFileHandler implements Handler {
 
             // Write content to file (creates or overwrites)
             Files.writeString(filePath, content);
-
-            System.out.println("File written to: " + filePath.toAbsolutePath());
             return true;
         } catch (IOException e) {
             e.printStackTrace();

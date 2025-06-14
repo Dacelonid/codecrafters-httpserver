@@ -24,11 +24,11 @@ public class GetHandler {
      */
     public static String getCommand(HttpRequest request) {
         String target = request.getTarget();
-        if (target.contains("/echo/"))
+        if (target.startsWith("/echo/"))
             return "echo";
-        if (target.contains("/files/"))
+        if (target.startsWith("/files/"))
             return "files";
-        if (target.contains("/user-agent"))
+        if (target.startsWith("/user-agent"))
             return "user-agent";
         return target;
     }
