@@ -7,4 +7,6 @@ public class HttpConstants {
     public static final String CONTENT_LENGTH = "Content-length:";
     public static final String BLANK_LINE = REQUEST_SEPARATOR + REQUEST_SEPARATOR;
 
+    public static String baseDir = "";
+
 }
