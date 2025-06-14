@@ -12,11 +12,15 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 
 public class MyServerImpl implements Runnable {
     private final int port;
     private ServerSocket serverSocket;
     private boolean keepRunning = true;
+    private final ExecutorService threadPool = Executors.newCachedThreadPool();
 
     public void stop() {
         this.keepRunning = false;
@@ -27,6 +31,7 @@ public class MyServerImpl implements Runnable {
                 System.out.println("Error closing server socket: " + e.getMessage());
             }
         }
+        threadPool.shutdown();
     }
 
     public MyServerImpl(int port) {
@@ -39,18 +44,11 @@ public class MyServerImpl implements Runnable {
             this.serverSocket = serverSock; // assign to field
             serverSocket.setReuseAddress(true);
             while (keepRunning) {
-                try (Socket accept = serverSocket.accept();
-                     OutputStream outputStream = accept.getOutputStream();
-                     BufferedReader reader = new BufferedReader(new InputStreamReader(accept.getInputStream()))) {
-                    List<String> requestLines = readLines(reader);
-                    if (!requestLines.isEmpty()) {
-                        String rawRequest = String.join("\r\n", requestLines) + "\r\n\r\n";
-                        HttpResponse response = handleLine(rawRequest);
-                        outputStream.write(response.getBytes());
-                        outputStream.flush();
-                    }
+                try {
+                    Socket accept = serverSocket.accept();
+                    threadPool.execute(() -> handleClient(accept));
                 } catch (IOException e) {
-                    if (keepRunning) //only log exception if we get an IO exception while running
+                    if (keepRunning)
                         System.out.println("We should still be running, but there was an issue" + e.getMessage());
                 }
             }
@@ -58,6 +56,24 @@ public class MyServerImpl implements Runnable {
             System.out.println("IOException: " + e.getMessage());
         }
     }
+
+    private void handleClient(Socket clientSocket) {
+        try (Socket socket = clientSocket;
+             OutputStream outputStream = socket.getOutputStream();
+             BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
+
+            List<String> requestLines = readLines(reader);
+            if (!requestLines.isEmpty()) {
+                String rawRequest = String.join("\r\n", requestLines) + "\r\n\r\n";
+                HttpResponse response = handleLine(rawRequest);
+                outputStream.write(response.getBytes());
+                outputStream.flush();
+            }
+        } catch (IOException e) {
+            System.out.println("Error handling client: " + e.getMessage());
+        }
+    }
+
 
     private static List<String> readLines(BufferedReader reader) throws IOException {
         List<String> requestLines = new ArrayList<>();
