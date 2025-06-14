@@ -1,13 +1,15 @@
 package server;
 
+import server.handlers.EchoHandler;
+import server.handlers.Handler;
+import server.handlers.NotFoundHandler;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
-
-import static server.HttpResponse.REQUEST_SEPARATOR;
 
 public class MyServerImpl implements Runnable {
     private final int port;
@@ -39,11 +41,11 @@ public class MyServerImpl implements Runnable {
                      OutputStream outputStream = accept.getOutputStream();
                      BufferedReader reader = new BufferedReader(new InputStreamReader(accept.getInputStream()))) {
                     String line;
-                    if ((line = reader.readLine()) != null){
+                    if ((line = reader.readLine()) != null) {
                         HttpResponse response = handleLine(line);
-                    outputStream.write(buildResponse(response));
-                    outputStream.flush();
-                }
+                        outputStream.write(buildResponse(response));
+                        outputStream.flush();
+                    }
                 } catch (IOException e) {
                     if (keepRunning) //only log exception if we get an IO exception while running
                         System.out.println("We should still be running, but there was an issue" + e.getMessage());
@@ -56,14 +58,17 @@ public class MyServerImpl implements Runnable {
 
     private HttpResponse handleLine(String s) {
         HttpRequest request = HttpRequest.parse(s);
-        if (request.getTarget().equals("/") || request.getTarget().equals("/index.html")) {
-            return new HttpResponse(HttpCodes.OK, "OK", "text/plain");
-        } else if (request.getTarget().startsWith("/echo")) {
-            String path = request.getTarget().substring("/echo/".length());
+        Handler handler = chooseHandler(request);
+        return handler.handle(request);
+    }
 
-            return new HttpResponse(HttpCodes.OK, path, "text/plain");
-        }
-        return new HttpResponse(HttpCodes.NOT_FOUND, "Not Found", "Content-Type: text/plain");
+    private static Handler chooseHandler(HttpRequest request) {
+        String command = request.getCommand();
+        return switch (command) {
+            case "/", "/index.html" -> new BasicOKHandler();
+            case "echo" -> new EchoHandler();
+            default -> new NotFoundHandler();
+        };
     }
 
 
