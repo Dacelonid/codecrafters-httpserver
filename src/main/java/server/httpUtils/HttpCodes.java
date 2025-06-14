@@ -1,4 +1,4 @@
-package server;
+package server.httpUtils;
 
 public enum HttpCodes {
     OK(200, "OK"), NOT_FOUND(404, "Not Found");

@@ -1,8 +1,8 @@
 package server;
 
-import server.handlers.EchoHandler;
-import server.handlers.Handler;
-import server.handlers.NotFoundHandler;
+import server.handlers.*;
+import server.httpstructure.HttpRequest;
+import server.httpstructure.HttpResponse;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -10,6 +10,8 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MyServerImpl implements Runnable {
     private final int port;
@@ -40,10 +42,11 @@ public class MyServerImpl implements Runnable {
                 try (Socket accept = serverSocket.accept();
                      OutputStream outputStream = accept.getOutputStream();
                      BufferedReader reader = new BufferedReader(new InputStreamReader(accept.getInputStream()))) {
-                    String line;
-                    if ((line = reader.readLine()) != null) {
-                        HttpResponse response = handleLine(line);
-                        outputStream.write(buildResponse(response));
+                    List<String> requestLines = readLines(reader);
+                    if (!requestLines.isEmpty()) {
+                        String rawRequest = String.join("\r\n", requestLines) + "\r\n\r\n";
+                        HttpResponse response = handleLine(rawRequest);
+                        outputStream.write(response.getBytes());
                         outputStream.flush();
                     }
                 } catch (IOException e) {
@@ -56,23 +59,39 @@ public class MyServerImpl implements Runnable {
         }
     }
 
+    private static List<String> readLines(BufferedReader reader) throws IOException {
+        List<String> requestLines = new ArrayList<>();
+        String line;
+        while ((line = reader.readLine()) != null && !line.isEmpty()) {
+            requestLines.add(line);
+        }
+        return requestLines;
+    }
+
     private HttpResponse handleLine(String s) {
-        HttpRequest request = HttpRequest.parse(s);
+        HttpRequest request = HttpRequest.from(s);
         Handler handler = chooseHandler(request);
         return handler.handle(request);
     }
 
     private static Handler chooseHandler(HttpRequest request) {
-        String command = request.getCommand();
+        String command = getCommand(request);
         return switch (command) {
             case "/", "/index.html" -> new BasicOKHandler();
             case "echo" -> new EchoHandler();
+            case "user-agent" -> new UserAgentHandler();
             default -> new NotFoundHandler();
         };
-    }
 
 
-    private byte[] buildResponse(HttpResponse response) {
-        return response.toString().getBytes();
     }
+    public static String getCommand(HttpRequest request) {
+        String target = request.getTarget();
+        if(target.contains("/echo/"))
+            return "echo";
+        if(target.contains("/user-agent"))
+            return "user-agent";
+        return target;
+    }
+
 }

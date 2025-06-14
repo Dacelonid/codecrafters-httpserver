@@ -68,10 +68,22 @@ public class MyServerImplTest {
         HttpURLConnection badcon = openConnection(badUrl);
         assertEquals(404, badcon.getResponseCode());
     }
+//    @Test
+    public void userAgentHandling() throws IOException, URISyntaxException {
+        if(!local) {return;}
+        String validUrl = "http://localhost:4221/user-agent";
+        URL goodUrl = new URI(validUrl).toURL();
+
+        HttpURLConnection goodcon = openConnection(goodUrl);
+        assertEquals(200, goodcon.getResponseCode());
+        assertEquals("foobar/1.2.3", readFromConnection(goodcon));
+
+    }
 
     private static HttpURLConnection openConnection(URL goodUrl) throws IOException {
         HttpURLConnection con = (HttpURLConnection) goodUrl.openConnection();
         con.setRequestMethod("GET");
+
         con.setDoOutput(true);
         return con;
     }
