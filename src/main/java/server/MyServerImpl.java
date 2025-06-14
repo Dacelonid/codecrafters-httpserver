@@ -1,7 +1,6 @@
 package server;
 
 import server.handlers.*;
-import server.httpUtils.HttpCodes;
 import server.httpUtils.HttpMethod;
 import server.httpstructure.HttpRequest;
 import server.httpstructure.HttpResponse;
@@ -66,7 +65,7 @@ public class MyServerImpl implements Runnable {
 
             List<String> requestLines = readLines(reader);
             if (!requestLines.isEmpty()) {
-                String rawRequest = String.join("\r\n", requestLines) + "\r\n\r\n";
+                String rawRequest = String.join("\r\n", requestLines);
                 HttpResponse response = handleLine(rawRequest);
                 outputStream.write(response.getBytes());
                 outputStream.flush();
@@ -76,14 +75,41 @@ public class MyServerImpl implements Runnable {
         }
     }
 
-
     private static List<String> readLines(BufferedReader reader) throws IOException {
-        List<String> requestLines = new ArrayList<>();
+        StringBuilder requestBuilder = new StringBuilder();
         String line;
+
+        // Read headers
         while ((line = reader.readLine()) != null && !line.isEmpty()) {
-            requestLines.add(line);
+            requestBuilder.append(line).append("\r\n");
         }
-        return requestLines;
+
+        // End of headers
+        requestBuilder.append("\r\n");
+
+        // Look for Content-Length to determine how much body to read
+        int contentLength = 0;
+        for (String headerLine : requestBuilder.toString().split("\r\n")) {
+            if (headerLine.toLowerCase().startsWith("content-length:")) {
+                try {
+                    contentLength = Integer.parseInt(headerLine.substring("content-length:".length()).trim());
+                } catch (NumberFormatException ignored) {}
+                break;
+            }
+        }
+
+        if (contentLength > 0) {
+            char[] bodyChars = new char[contentLength];
+            int totalRead = 0;
+            while (totalRead < contentLength) {
+                int read = reader.read(bodyChars, totalRead, contentLength - totalRead);
+                if (read == -1) break; // EOF
+                totalRead += read;
+            }
+            requestBuilder.append(new String(bodyChars, 0, totalRead));
+        }
+
+        return List.of(requestBuilder.toString());
     }
 
     private HttpResponse handleLine(String s) {
@@ -91,6 +117,10 @@ public class MyServerImpl implements Runnable {
         if(request.getRequestLine().getMethod() == HttpMethod.GET) {
             GetHandler getHandler = new GetHandler();
             Handler handler = getHandler.chooseHandler(request);
+            return handler.handle(request);
+        }else if(request.getRequestLine().getMethod() == HttpMethod.POST){
+            PostHandler postHandler = new PostHandler();
+            Handler handler = postHandler.chooseHandler(request);
             return handler.handle(request);
         }
         return new MethodNotAllowedHandler().handle(request);

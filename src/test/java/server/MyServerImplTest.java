@@ -3,15 +3,17 @@ package server;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import server.httpUtils.HttpConstants;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -48,6 +50,7 @@ public class MyServerImplTest {
         assertEquals("text/plain", con.getHeaderField("Content-Type"));
         assertEquals("2", con.getHeaderField("Content-Length"));
     }
+
     @Test
     public void unknownMethodGetForbidden() throws IOException, URISyntaxException {
         if (!local) {
@@ -138,11 +141,14 @@ public class MyServerImplTest {
         assertEquals("text/plain", goodcon.getHeaderField("Content-Type"));
         assertEquals("9", goodcon.getHeaderField("Content-Length"));
     }
+
     @Test
-    public void fileHandlingFileIsFound() throws IOException, URISyntaxException {
+    public void fileHandlingFileIsFound(@TempDir Path tempDir) throws IOException, URISyntaxException {
         if (!local) {
             return;
         }
+        HttpConstants.baseDir = tempDir.toString();
+        createFile("apple", "apple");
         String validUrl = "http://localhost:4221/files/apple";
         URL goodUrl = new URI(validUrl).toURL();
 
@@ -152,6 +158,36 @@ public class MyServerImplTest {
         assertEquals("HTTP/1.1 200 OK", goodcon.getHeaderField(0));
         assertEquals("application/octet-stream", goodcon.getHeaderField("Content-Type"));
         assertEquals("5", goodcon.getHeaderField("Content-Length"));
+    }
+
+    @Test
+    public void fileHandlingPutFile(@TempDir Path tempDir) throws IOException, URISyntaxException {
+        if (!local) {
+            return;
+        }
+        HttpConstants.baseDir = tempDir.toString();
+        String validUrl = "http://localhost:4221/files/apple";
+        URL goodUrl = new URI(validUrl).toURL();
+
+        HttpURLConnection con = (HttpURLConnection) goodUrl.openConnection();
+        con.setRequestMethod("POST");
+        con.setRequestProperty("Content-Type", "text/plain");
+        con.setRequestProperty("Content-Length", "5");
+        con.setDoOutput(true);
+        String body = "apple";
+        // Actually write the body to the server
+        try (OutputStream os = con.getOutputStream()) {
+            os.write(body.getBytes());
+            os.flush();
+        }
+
+        assertEquals(201, con.getResponseCode());
+        assertEquals("Created", readFromConnection(con));
+        assertEquals("HTTP/1.1 201 Created", con.getHeaderField(0));
+        assertEquals("text/plain", con.getHeaderField("Content-Type"));
+        assertEquals("7", con.getHeaderField("Content-Length"));
+        String fileContents = readFile("apple");
+        assertEquals("apple", fileContents);
     }
 
     private static HttpURLConnection openConnection(URL goodUrl) throws IOException {
@@ -184,4 +220,54 @@ public class MyServerImplTest {
             return response.toString().trim();
         }
     }
+
+
+    private void createFile(String fileName, String content) {
+        try {
+            // Combine base directory and filename
+            Path dirPath = Paths.get(HttpConstants.baseDir);
+            Path filePath = dirPath.resolve(fileName);
+
+            // Ensure directory exists
+            Files.createDirectories(dirPath);
+
+            // Write content to file (creates or overwrites)
+            Files.writeString(filePath, content);
+
+            System.out.println("File written to: " + filePath.toAbsolutePath());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private String readFile(String fileName) {
+        Path dirPath = Paths.get(HttpConstants.baseDir);
+        Path filePath = dirPath.resolve(fileName);
+
+        // Wait up to 1 second for the file to appear
+        int maxAttempts = 1000;
+        int delayMillis = 100;
+
+        for (int i = 0; i < maxAttempts; i++) {
+            if (Files.exists(filePath)) {
+                try {
+                    return Files.readString(filePath);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    return null;
+                }
+            }
+
+            try {
+                Thread.sleep(delayMillis);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+
+        // If the file wasn't found after waiting
+        return null;
+    }
+
 }
