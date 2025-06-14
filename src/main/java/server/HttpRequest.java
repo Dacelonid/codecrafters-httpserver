@@ -1,5 +1,7 @@
 package server;
 
+import java.util.Arrays;
+
 public class HttpRequest {
     public HttpMethod getMethod() {
         return method;

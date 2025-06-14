@@ -34,17 +34,27 @@ public class MyServerImplTest {
     }
 
     @Test
-    public void test200Response() throws IOException, URISyntaxException {
+    public void noPathGet200Response() throws IOException, URISyntaxException {
         if(!local) {return;}
             URL url = new URI("http://localhost:4221").toURL();
             HttpURLConnection con = openConnection(url);
 
             String line = readFromConnection(con);
-            assertEquals("Hello World", line);
+            assertEquals("OK", line);
     }
 
     @Test
-    public void test200And404Response() throws IOException, URISyntaxException {
+    public void echoRest() throws IOException, URISyntaxException {
+        if(!local) {return;}
+            URL url = new URI("http://localhost:4221/echo/something").toURL();
+            HttpURLConnection con = openConnection(url);
+
+            String line = readFromConnection(con);
+            assertEquals("something", line);
+    }
+
+    @Test
+    public void validPathAndInvalidPathGet200And404Response() throws IOException, URISyntaxException {
         if(!local) {return;}
         String validUrl = "http://localhost:4221/index.html";
         String invalidUrl = "http://localhost:4221/gjhksdgaku.html";
@@ -53,7 +63,7 @@ public class MyServerImplTest {
 
         HttpURLConnection goodcon = openConnection(goodUrl);
         assertEquals(200, goodcon.getResponseCode());
-        assertEquals("Hello World", readFromConnection(goodcon));
+        assertEquals("OK", readFromConnection(goodcon));
 
         HttpURLConnection badcon = openConnection(badUrl);
         assertEquals(404, badcon.getResponseCode());

@@ -7,8 +7,9 @@ import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+import static server.HttpResponse.REQUEST_SEPARATOR;
+
 public class MyServerImpl implements Runnable {
-    public static final String REQUEST_SEPARATOR = "\r\n";
     private final int port;
     private ServerSocket serverSocket;
     private boolean keepRunning = true;
@@ -39,8 +40,8 @@ public class MyServerImpl implements Runnable {
                      BufferedReader reader = new BufferedReader(new InputStreamReader(accept.getInputStream()))) {
                     String line;
                     if ((line = reader.readLine()) != null){
-                        HttpCodes responseCode = handleLine(line);
-                    outputStream.write(buildResponse("Hello World", responseCode));
+                        HttpResponse response = handleLine(line);
+                    outputStream.write(buildResponse(response));
                     outputStream.flush();
                 }
                 } catch (IOException e) {
@@ -53,18 +54,20 @@ public class MyServerImpl implements Runnable {
         }
     }
 
-    private HttpCodes handleLine(String s) {
+    private HttpResponse handleLine(String s) {
         HttpRequest request = HttpRequest.parse(s);
         if (request.getTarget().equals("/") || request.getTarget().equals("/index.html")) {
-            return HttpCodes.OK;
+            return new HttpResponse(HttpCodes.OK, "OK", "text/plain");
+        } else if (request.getTarget().startsWith("/echo")) {
+            String path = request.getTarget().substring("/echo/".length());
+
+            return new HttpResponse(HttpCodes.OK, path, "text/plain");
         }
-        return HttpCodes.NOT_FOUND;
+        return new HttpResponse(HttpCodes.NOT_FOUND, "Not Found", "Content-Type: text/plain");
     }
 
 
-    private byte[] buildResponse(String body, HttpCodes responseCode) {
-        return ("HTTP/1.1 " + responseCode.getCode() + " " + responseCode.getMessage() + REQUEST_SEPARATOR +
-                "Content-Length: " + body.length() + REQUEST_SEPARATOR +
-                REQUEST_SEPARATOR + body).getBytes();
+    private byte[] buildResponse(HttpResponse response) {
+        return response.toString().getBytes();
     }
 }
