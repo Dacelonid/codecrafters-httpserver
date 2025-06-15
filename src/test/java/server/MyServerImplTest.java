@@ -11,9 +11,11 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.zip.GZIPInputStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -98,7 +100,7 @@ public class MyServerImplTest {
         assertEquals("something", line);
         assertEquals("HTTP/1.1 200 OK", con.getHeaderField(0));
         assertEquals("text/plain", con.getHeaderField("Content-Type"));
-        assertEquals("9", con.getHeaderField("Content-Length"));
+        assertEquals("29", con.getHeaderField("Content-Length"));
         assertEquals("gzip", con.getHeaderField("Content-Encoding"));
     }
 
@@ -116,7 +118,7 @@ public class MyServerImplTest {
         assertEquals("something", line);
         assertEquals("HTTP/1.1 200 OK", con.getHeaderField(0));
         assertEquals("text/plain", con.getHeaderField("Content-Type"));
-        assertEquals("9", con.getHeaderField("Content-Length"));
+        assertEquals("29", con.getHeaderField("Content-Length"));
         assertEquals("gzip", con.getHeaderField("Content-Encoding"));
     }
     @Test
@@ -280,14 +282,20 @@ public class MyServerImplTest {
         }
 
         if (stream == null) {
-            return ""; // or throw exception
+            return "";
         }
 
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream))) {
+        // Check for gzip encoding
+        String encoding = con.getHeaderField("Content-Encoding");
+        if (encoding != null && encoding.equalsIgnoreCase("gzip")) {
+            stream = new GZIPInputStream(stream);
+        }
+
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
             StringBuilder response = new StringBuilder();
             String line;
             while ((line = reader.readLine()) != null) {
-                response.append(line);
+                response.append(line).append("\n"); // optional: preserve line breaks
             }
             return response.toString().trim();
         }
