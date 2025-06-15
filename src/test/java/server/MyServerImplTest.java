@@ -101,6 +101,42 @@ public class MyServerImplTest {
         assertEquals("9", con.getHeaderField("Content-Length"));
         assertEquals("gzip", con.getHeaderField("Content-Encoding"));
     }
+
+    @Test
+    public void echotestCompressedMultipleAccept() throws IOException, URISyntaxException {
+        if (!local) {
+            return;
+        }
+        URL url = new URI("http://localhost:4221/echo/something").toURL();
+        HttpURLConnection con = (HttpURLConnection) url.openConnection();
+        con.setRequestMethod("GET");
+        con.setDoOutput(true);
+        con.setRequestProperty("Accept-Encoding", "encoding1, gzip, encoding2,  encoding3");
+        String line = readFromConnection(con);
+        assertEquals("something", line);
+        assertEquals("HTTP/1.1 200 OK", con.getHeaderField(0));
+        assertEquals("text/plain", con.getHeaderField("Content-Type"));
+        assertEquals("9", con.getHeaderField("Content-Length"));
+        assertEquals("gzip", con.getHeaderField("Content-Encoding"));
+    }
+    @Test
+    public void echotestCompressedMultipleInvalidAccept() throws IOException, URISyntaxException {
+        if (!local) {
+            return;
+        }
+        URL url = new URI("http://localhost:4221/echo/something").toURL();
+        HttpURLConnection con = (HttpURLConnection) url.openConnection();
+        con.setRequestMethod("GET");
+        con.setDoOutput(true);
+        con.setRequestProperty("Accept-Encoding", "encoding1, encoding2, encoding3");
+        String line = readFromConnection(con);
+        assertEquals("something", line);
+        assertEquals("HTTP/1.1 200 OK", con.getHeaderField(0));
+        assertEquals("text/plain", con.getHeaderField("Content-Type"));
+        assertEquals("9", con.getHeaderField("Content-Length"));
+        assertNull(con.getHeaderField("Content-Encoding"));
+    }
+
     @Test
     public void echotestUnknownEncoding() throws IOException, URISyntaxException {
         if (!local) {
