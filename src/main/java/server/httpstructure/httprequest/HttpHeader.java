@@ -25,14 +25,14 @@ public class HttpHeader {
     public static HttpHeader build(String[] headers) {
         HttpHeaderBuilder builder = builder();
         for (String header : headers) {
-            if (header.startsWith("Host")) {
-                builder = builder.host(header.substring(5).trim());
+            if (header.startsWith("Host:")) {
+                builder = builder.host(header.substring("Host:".length()).trim());
             }
-            if (header.startsWith("User-Agent")) {
-                builder = builder.userAgent(header.substring(11).trim());
+            if (header.startsWith("User-Agent:")) {
+                builder = builder.userAgent(header.substring("User-Agent:".length()).trim());
             }
-            if (header.startsWith("Accept-Encoding")) {
-                builder = builder.acceptEncoding(header.substring(15).trim());
+            if (header.startsWith("Accept-Encoding:")) {
+                builder = builder.acceptEncoding(header.substring("Accept-Encoding:".length()).trim());
             }
         }
         return builder.build();
@@ -48,6 +48,10 @@ public class HttpHeader {
 
     public String getAccept() {
         return contentNegotiationInfo.accept();
+    }
+
+    public String getAcceptEncoding() {
+        return contentNegotiationInfo.acceptEncoding();
     }
 
 
@@ -132,7 +136,7 @@ public class HttpHeader {
         }
 
         public HttpHeaderBuilder acceptEncoding(String acceptEncoding) {
-            this.acceptEncoding = acceptEncoding;
+                this.acceptEncoding = acceptEncoding;
             return this;
         }
 

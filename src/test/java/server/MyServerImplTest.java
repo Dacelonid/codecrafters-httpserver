@@ -16,6 +16,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class MyServerImplTest {
 
@@ -69,7 +70,7 @@ public class MyServerImplTest {
     }
 
     @Test
-    public void echoRest() throws IOException, URISyntaxException {
+    public void echotest() throws IOException, URISyntaxException {
         if (!local) {
             return;
         }
@@ -81,6 +82,41 @@ public class MyServerImplTest {
         assertEquals("text/plain", con.getHeaderField("Content-Type"));
         assertEquals("9", con.getHeaderField("Content-Length"));
 
+    }
+
+    @Test
+    public void echotestCompressed() throws IOException, URISyntaxException {
+        if (!local) {
+            return;
+        }
+        URL url = new URI("http://localhost:4221/echo/something").toURL();
+        HttpURLConnection con = (HttpURLConnection) url.openConnection();
+        con.setRequestMethod("GET");
+        con.setDoOutput(true);
+        con.setRequestProperty("Accept-Encoding", "gzip");
+        String line = readFromConnection(con);
+        assertEquals("something", line);
+        assertEquals("HTTP/1.1 200 OK", con.getHeaderField(0));
+        assertEquals("text/plain", con.getHeaderField("Content-Type"));
+        assertEquals("9", con.getHeaderField("Content-Length"));
+        assertEquals("gzip", con.getHeaderField("Content-Encoding"));
+    }
+    @Test
+    public void echotestUnknownEncoding() throws IOException, URISyntaxException {
+        if (!local) {
+            return;
+        }
+        URL url = new URI("http://localhost:4221/echo/something").toURL();
+        HttpURLConnection con = (HttpURLConnection) url.openConnection();
+        con.setRequestMethod("GET");
+        con.setDoOutput(true);
+        con.setRequestProperty("Accept-Encoding", "invalid-encoding");
+        String line = readFromConnection(con);
+        assertEquals("something", line);
+        assertEquals("HTTP/1.1 200 OK", con.getHeaderField(0));
+        assertEquals("text/plain", con.getHeaderField("Content-Type"));
+        assertEquals("9", con.getHeaderField("Content-Length"));
+        assertNull(con.getHeaderField("Content-Encoding"));
     }
 
     @Test
@@ -231,7 +267,7 @@ public class MyServerImplTest {
             // Ensure directory exists
             Files.createDirectories(dirPath);
 
-            // Write content to file (creates or overwrites)
+            // Write content to the file (creates or overwrites)
             Files.writeString(filePath, content);
         } catch (IOException e) {
             e.printStackTrace();

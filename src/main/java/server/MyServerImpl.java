@@ -4,7 +4,7 @@ import server.handlers.GetHandler;
 import server.handlers.MethodNotAllowedHandler;
 import server.handlers.PostHandler;
 import server.httpstructure.httprequest.HttpRequest;
-import server.httpstructure.HttpResponse;
+import server.httpstructure.httpresponse.HttpResponse;
 
 import java.io.BufferedReader;
 import java.io.IOException;

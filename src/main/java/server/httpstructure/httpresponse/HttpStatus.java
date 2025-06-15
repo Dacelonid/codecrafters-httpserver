@@ -1,4 +1,4 @@
-package server.httpstructure;
+package server.httpstructure.httpresponse;
 
 import server.httpUtils.HttpCodes;
 

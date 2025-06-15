@@ -3,7 +3,7 @@ package server.handlers;
 import server.httpUtils.HttpCodes;
 import server.httpUtils.HttpConstants;
 import server.httpstructure.httprequest.HttpRequest;
-import server.httpstructure.HttpResponse;
+import server.httpstructure.httpresponse.HttpResponse;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -17,13 +17,13 @@ public class FileHandler implements Handler {
         Path path = Path.of(HttpConstants.baseDir).resolve(file).normalize();
         if (path.toFile().exists()) {
             try {
-                return new HttpResponse(HttpCodes.OK, "application/octet-stream", getFileContents(path));
+                return HttpResponse.builder().responseCode(HttpCodes.OK).contentType("application/octet-stream").body(getFileContents(path)).build();
             } catch (IOException e) {
-                return new HttpResponse(HttpCodes.NOT_FOUND, "text/plain", "Not Found");
+                return HttpResponse.builder().responseCode(HttpCodes.NOT_FOUND).body("Not Found").build();
             }
         }
         else{
-            return new HttpResponse(HttpCodes.NOT_FOUND, "text/plain", "Not Found");
+            return HttpResponse.builder().responseCode(HttpCodes.NOT_FOUND).body("Not Found").build();
         }
     }
 

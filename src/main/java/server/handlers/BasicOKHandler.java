@@ -2,11 +2,11 @@ package server.handlers;
 
 import server.httpUtils.HttpCodes;
 import server.httpstructure.httprequest.HttpRequest;
-import server.httpstructure.HttpResponse;
+import server.httpstructure.httpresponse.HttpResponse;
 
 public class BasicOKHandler implements Handler {
     public HttpResponse handle(HttpRequest request) {
-        return new HttpResponse(HttpCodes.OK, "text/plain", "OK");
+        return HttpResponse.builder().responseCode(HttpCodes.OK).contentType("text/plain").body("OK").build();
     }
 
 }

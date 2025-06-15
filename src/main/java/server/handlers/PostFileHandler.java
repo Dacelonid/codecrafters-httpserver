@@ -3,7 +3,7 @@ package server.handlers;
 import server.httpUtils.HttpCodes;
 import server.httpUtils.HttpConstants;
 import server.httpstructure.httprequest.HttpRequest;
-import server.httpstructure.HttpResponse;
+import server.httpstructure.httpresponse.HttpResponse;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -14,12 +14,12 @@ public class PostFileHandler implements Handler {
     @Override
     public HttpResponse handle(HttpRequest request) {
         String file = request.getTarget().substring("/files/".length());
-        ;
+
         Path path = Path.of(HttpConstants.baseDir).resolve(file).normalize();
         if(createFile(path, request.getBody())){
-            return new HttpResponse(HttpCodes.CREATED, "text/plain", "Created");
+            return HttpResponse.builder().responseCode(HttpCodes.CREATED).body("Created").build();
         }
-        return new HttpResponse(HttpCodes.INTERNAL_SERVER_ERROR, "text/plain", "Internal Server Error");
+        return HttpResponse.builder().responseCode(HttpCodes.INTERNAL_SERVER_ERROR).body("Internal Server Error").build();
     }
 
     private boolean createFile(Path fileName, String content) {
