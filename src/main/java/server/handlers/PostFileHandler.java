@@ -17,9 +17,9 @@ public class PostFileHandler implements Handler {
 
         Path path = Path.of(HttpConstants.baseDir).resolve(file).normalize();
         if(createFile(path, request.getBody())){
-            return HttpResponse.builder().responseCode(HttpCodes.CREATED).body("Created").build();
+            return HttpResponse.builder().responseCode(HttpCodes.CREATED).connection(request.getHttpHeader().getConnection()).body("Created").build();
         }
-        return HttpResponse.builder().responseCode(HttpCodes.INTERNAL_SERVER_ERROR).body("Internal Server Error").build();
+        return HttpResponse.builder().responseCode(HttpCodes.INTERNAL_SERVER_ERROR).connection(request.getHttpHeader().getConnection()).body("Internal Server Error").build();
     }
 
     private boolean createFile(Path fileName, String content) {

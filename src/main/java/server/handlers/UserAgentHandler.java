@@ -8,6 +8,6 @@ public class UserAgentHandler implements Handler{
 
     @Override
     public HttpResponse handle(HttpRequest request) {
-        return HttpResponse.builder().responseCode(HttpCodes.OK).body(request.getHttpHeader().getUserAgent()).build();
+        return HttpResponse.builder().responseCode(HttpCodes.OK).connection(request.getHttpHeader().getConnection()).body(request.getHttpHeader().getUserAgent()).build();
     }
 }

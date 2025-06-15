@@ -7,6 +7,6 @@ import server.httpstructure.httpresponse.HttpResponse;
 public class NotFoundHandler implements Handler {
     @Override
     public HttpResponse handle(HttpRequest request) {
-        return HttpResponse.builder().responseCode(HttpCodes.NOT_FOUND).body("Not Found").build();
+        return HttpResponse.builder().responseCode(HttpCodes.NOT_FOUND).connection(request.getHttpHeader().getConnection()).body("Not Found").build();
     }
 }

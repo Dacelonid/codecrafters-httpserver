@@ -17,13 +17,13 @@ public class FileHandler implements Handler {
         Path path = Path.of(HttpConstants.baseDir).resolve(file).normalize();
         if (path.toFile().exists()) {
             try {
-                return HttpResponse.builder().responseCode(HttpCodes.OK).contentType("application/octet-stream").body(getFileContents(path)).build();
+                return HttpResponse.builder().responseCode(HttpCodes.OK).connection(request.getHttpHeader().getConnection()).contentType("application/octet-stream").body(getFileContents(path)).build();
             } catch (IOException e) {
-                return HttpResponse.builder().responseCode(HttpCodes.NOT_FOUND).body("Not Found").build();
+                return HttpResponse.builder().responseCode(HttpCodes.NOT_FOUND).connection(request.getHttpHeader().getConnection()).body("Not Found").build();
             }
         }
         else{
-            return HttpResponse.builder().responseCode(HttpCodes.NOT_FOUND).body("Not Found").build();
+            return HttpResponse.builder().responseCode(HttpCodes.NOT_FOUND).connection(request.getHttpHeader().getConnection()).body("Not Found").build();
         }
     }
 

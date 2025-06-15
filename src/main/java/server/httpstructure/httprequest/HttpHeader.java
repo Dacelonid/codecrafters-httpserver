@@ -34,6 +34,9 @@ public class HttpHeader {
             if (header.startsWith("Accept-Encoding:")) {
                 builder = builder.acceptEncoding(header.substring("Accept-Encoding:".length()).trim());
             }
+            if(header.startsWith("Connection:")){
+                builder = builder.connection(header.substring("Connection:".length()).trim());
+            }
         }
         return builder.build();
     }
@@ -52,6 +55,10 @@ public class HttpHeader {
 
     public String getAcceptEncoding() {
         return contentNegotiationInfo.acceptEncoding();
+    }
+
+    public String getConnection(){
+        return generalInfo.connection();
     }
 
 

@@ -76,6 +76,10 @@ public class MyServerImpl implements Runnable {
 
                 // check if the connection should be closed
                 if (shouldCloseConnection(rawRequest)) {
+                    System.out.println(response);
+                    System.out.println("Should close connection");
+                    clientSocket.shutdownOutput(); // Optional graceful shutdown
+                    clientSocket.close();
                     break;
                 }
             }

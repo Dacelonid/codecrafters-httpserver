@@ -15,7 +15,6 @@ import java.nio.file.Paths;
 import java.util.zip.GZIPInputStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class MyServerImplTest {
 
@@ -51,6 +50,7 @@ public class MyServerImplTest {
                 .statusLine("HTTP/1.1 200 OK")
                 .contentLength("2")
                 .body("OK")
+                .connection("keep-alive")
                 .contentType("text/plain").build().assertMatches(con, line);
     }
 
@@ -71,6 +71,7 @@ public class MyServerImplTest {
                 .statusLine("HTTP/1.1 405 Not Allowed")
                 .contentLength("11")
                 .body("Not Allowed")
+                .connection("keep-alive")
                 .contentType("text/plain").build().assertMatches(con, line);
 
     }
@@ -89,6 +90,25 @@ public class MyServerImplTest {
                 .statusLine("HTTP/1.1 200 OK")
                 .contentLength("9")
                 .contentType("text/plain")
+                .connection("keep-alive")
+                .build().assertMatches(con, line);
+    }
+
+    @Test
+    public void echotestConnectionClose() throws IOException, URISyntaxException {
+        if (!local) {
+            return;
+        }
+        HttpURLConnection con = new ConnectionBuilder("http://localhost:4221/echo/something", "GET").connection("close").build();
+        String line = readFromConnection(con);
+
+        ExpectedResponse.builder()
+                .statusCode(200)
+                .body("something")
+                .statusLine("HTTP/1.1 200 OK")
+                .contentLength("9")
+                .contentType("text/plain")
+                .connection("close")
                 .build().assertMatches(con, line);
     }
 
@@ -109,6 +129,7 @@ public class MyServerImplTest {
                 .contentLength("29")
                 .contentType("text/plain")
                 .contentEncoding("gzip")
+                .connection("keep-alive")
                 .build()
                 .assertMatches(con, line);
     }
@@ -129,6 +150,7 @@ public class MyServerImplTest {
                 .contentLength("29")
                 .contentType("text/plain")
                 .contentEncoding("gzip")
+                .connection("keep-alive")
                 .build().assertMatches(con, line);
     }
 
@@ -147,6 +169,7 @@ public class MyServerImplTest {
                 .statusLine("HTTP/1.1 200 OK")
                 .contentLength("9")
                 .contentType("text/plain")
+                .connection("keep-alive")
                 .contentEncoding(null) //explicit in the CodeCrafters testing
                 .build()
                 .assertMatches(con, line);
@@ -165,6 +188,7 @@ public class MyServerImplTest {
                 .statusLine("HTTP/1.1 200 OK")
                 .contentLength("9")
                 .contentType("text/plain")
+                .connection("keep-alive")
                 .contentEncoding(null)
                 .build().assertMatches(con, line);
     }
@@ -182,6 +206,7 @@ public class MyServerImplTest {
                 .contentLength("2")
                 .body("OK")
                 .contentType("text/plain")
+                .connection("keep-alive")
                 .build()
                 .assertMatches(goodcon, line);
 
@@ -191,6 +216,7 @@ public class MyServerImplTest {
                 .statusCode(404)
                 .statusLine("HTTP/1.1 404 Not Found")
                 .contentLength("9")
+                .connection("keep-alive")
                 .body("Not Found")
                 .contentType("text/plain")
                 .build()
@@ -211,14 +237,10 @@ public class MyServerImplTest {
                 .statusLine("HTTP/1.1 200 OK")
                 .contentLength("11")
                 .contentType("text/plain")
+                .connection("keep-alive")
                 .body("Java/24.0.1")
                 .build()
                 .assertMatches(goodcon, actual);
-        assertEquals("Java/24.0.1", actual);
-        assertEquals("HTTP/1.1 200 OK", goodcon.getHeaderField(0));
-        assertEquals("text/plain", goodcon.getHeaderField("Content-Type"));
-        assertEquals("11", goodcon.getHeaderField("Content-Length"));
-
     }
 
     @Test
@@ -232,6 +254,7 @@ public class MyServerImplTest {
                 .statusCode(404)
                 .statusLine("HTTP/1.1 404 Not Found")
                 .contentLength("9")
+                .connection("keep-alive")
                 .body("Not Found")
                 .contentType("text/plain")
                 .build().assertMatches(goodcon, readFromConnection(goodcon));
@@ -251,6 +274,7 @@ public class MyServerImplTest {
                 .statusLine("HTTP/1.1 200 OK")
                 .contentLength("5")
                 .body("apple")
+                .connection("keep-alive")
                 .contentType("application/octet-stream")
                 .build().assertMatches(goodcon, readFromConnection(goodcon));
     }
@@ -273,6 +297,7 @@ public class MyServerImplTest {
 
         ExpectedResponse.builder()
                 .statusCode(201)
+                .connection("keep-alive")
                 .statusLine("HTTP/1.1 201 Created")
                 .contentLength("7")
                 .body("Created")
@@ -368,6 +393,7 @@ public class MyServerImplTest {
         private String encoding;
         private String contentType;
         private int length;
+        private String connection = "keep-alive";
 
         ConnectionBuilder(String url, String method) throws URISyntaxException, MalformedURLException {
             this.url = new URI(url).toURL();
@@ -382,6 +408,7 @@ public class MyServerImplTest {
             if (encoding != null) con.setRequestProperty("Accept-Encoding", encoding);
             if (contentType != null) con.setRequestProperty("Content-Type", contentType);
             if (length > 0) con.setRequestProperty("Content-Length", Integer.toString(length));
+            con.setRequestProperty("Connection", connection);
             return con;
         }
 
@@ -402,6 +429,11 @@ public class MyServerImplTest {
 
         public ConnectionBuilder contentLength(int length) {
             this.length = length;
+            return this;
+        }
+
+        public ConnectionBuilder connection(String connection) {
+            this.connection = connection;
             return this;
         }
     }

@@ -6,7 +6,7 @@ import server.httpstructure.httpresponse.HttpResponse;
 
 public class BasicOKHandler implements Handler {
     public HttpResponse handle(HttpRequest request) {
-        return HttpResponse.builder().responseCode(HttpCodes.OK).contentType("text/plain").body("OK").build();
+        return HttpResponse.builder().responseCode(HttpCodes.OK).connection(request.getHttpHeader().getConnection()).contentType("text/plain").body("OK").build();
     }
 
 }

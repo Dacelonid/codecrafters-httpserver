@@ -13,8 +13,11 @@ public class HttpResponse {
     private final byte[] body;
     private final EntityHeaders entityHeaders;
 
-    private HttpResponse(HttpCodes responseCode, String contentType, String contentEncoding, byte[] body) {
+    private final String connection;
+
+    private HttpResponse(HttpCodes responseCode, String contentType, String contentEncoding, byte[] body, String connection) {
         this.statusLine = new HttpStatus(HTTP_VERSION, responseCode);
+        this.connection = connection;
         this.entityHeaders = new EntityHeaders(contentType, contentEncoding, body.length);
         this.body = body;
     }
@@ -25,8 +28,9 @@ public class HttpResponse {
     @Override
     public String toString() {
         // Only return headers as string — useful for debugging
-        return statusLine + REQUEST_SEPARATOR + entityHeaders + BLANK_LINE;
+        return statusLine + REQUEST_SEPARATOR + "Connection: " + connection + REQUEST_SEPARATOR + entityHeaders + BLANK_LINE;
     }
+
     public byte[] getBytes() {
         // Properly assemble headers + binary body
         byte[] headerBytes = toString().getBytes(StandardCharsets.US_ASCII);
@@ -43,9 +47,10 @@ public class HttpResponse {
         private byte[] body;
         private String contentType = "text/plain";
         private String contentEncoding;
+        private String connection = "Keep-Alive";
 
         public HttpResponse build() {
-            return new HttpResponse(responseCode, contentType, contentEncoding, body);
+            return new HttpResponse(responseCode, contentType, contentEncoding, body, connection);
         }
 
         public HttpResponseBuilder responseCode(HttpCodes responseCode) {
@@ -71,6 +76,11 @@ public class HttpResponse {
 
         public HttpResponseBuilder contentEncoding(String contentEncoding) {
             this.contentEncoding = contentEncoding;
+            return this;
+        }
+
+        public HttpResponseBuilder connection(String connection){
+            this.connection = connection;
             return this;
         }
 

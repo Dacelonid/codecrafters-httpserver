@@ -15,10 +15,11 @@ import java.util.zip.GZIPOutputStream;
 public class EchoHandler implements Handler{
     public HttpResponse handle(HttpRequest request) {
         String path = request.getTarget().substring("/echo/".length());
+        String connection = request.getHttpHeader().getConnection();
         if(isGzip(request)){
-            return HttpResponse.builder().responseCode(HttpCodes.OK).contentType("text/plain").contentEncoding("gzip").body(compress(path)).build();
+            return HttpResponse.builder().responseCode(HttpCodes.OK).contentType("text/plain").connection(connection).contentEncoding("gzip").body(compress(path)).build();
         }
-        return HttpResponse.builder().responseCode(HttpCodes.OK).contentType("text/plain").body(path).build();
+        return HttpResponse.builder().responseCode(HttpCodes.OK).contentType("text/plain").connection(connection).body(path).build();
     }
 
     private static byte[] compress(String data) {

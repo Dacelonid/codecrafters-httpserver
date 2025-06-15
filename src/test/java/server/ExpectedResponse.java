@@ -13,6 +13,7 @@ public class ExpectedResponse {
     private final String contentType;
     private final String contentLength;
     private final String contentEncoding;
+    private final String connection;
 
     private ExpectedResponse(Builder builder) {
         this.statusCode = builder.statusCode;
@@ -21,6 +22,7 @@ public class ExpectedResponse {
         this.contentType = builder.contentType;
         this.contentLength = builder.contentLength;
         this.contentEncoding = builder.contentEncoding;
+        this.connection = builder.connection;
     }
 
     public void assertMatches(HttpURLConnection con, String actualBody) throws IOException {
@@ -29,6 +31,7 @@ public class ExpectedResponse {
         assertEquals(statusLine, con.getHeaderField(0), "Unexpected status line");
         assertEquals(contentType, con.getHeaderField("Content-Type"), "Unexpected Content-Type");
         assertEquals(contentLength, con.getHeaderField("Content-Length"), "Unexpected Content-Length");
+        assertEquals(connection, con.getHeaderField("Connection"), "Unexpected Content-Length");
 
         if (contentEncoding == null) {
             assertNull(con.getHeaderField("Content-Encoding"), "Expected no Content-Encoding header");
@@ -48,6 +51,7 @@ public class ExpectedResponse {
         private String contentType;
         private String contentLength;
         private String contentEncoding;
+        private String connection;
 
         public Builder statusCode(int statusCode) {
             this.statusCode = statusCode;
@@ -81,6 +85,11 @@ public class ExpectedResponse {
 
         public ExpectedResponse build() {
             return new ExpectedResponse(this);
+        }
+
+        public Builder connection(String connection) {
+            this.connection = connection;
+            return this;
         }
     }
 
