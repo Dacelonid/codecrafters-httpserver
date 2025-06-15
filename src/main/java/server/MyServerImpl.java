@@ -61,21 +61,29 @@ public class MyServerImpl implements Runnable {
     }
 
     private void handleClient(Socket clientSocket) {
-        try (Socket socket = clientSocket;
-             OutputStream outputStream = socket.getOutputStream();
-             BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
+        try {
+            OutputStream outputStream = clientSocket.getOutputStream();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 
-            List<String> requestLines = readLines(reader);
-            if (!requestLines.isEmpty()) {
+            while (!clientSocket.isClosed() && !clientSocket.isInputShutdown()) {
+                List<String> requestLines = readLines(reader);
+                if (requestLines.isEmpty()) break;
+
                 String rawRequest = String.join("\r\n", requestLines);
                 HttpResponse response = handleLine(rawRequest);
                 outputStream.write(response.getBytes());
                 outputStream.flush();
+
+                // check if the connection should be closed
+                if (shouldCloseConnection(rawRequest)) {
+                    break;
+                }
             }
-        } catch (IOException e) {
-            System.out.println("Error handling client: " + e.getMessage());
+        } catch (IOException ex) {
+            System.out.println("Error handling client: " + ex.getMessage());
         }
     }
+
 
     private static List<String> readLines(BufferedReader reader) throws IOException {
         StringBuilder requestBuilder = new StringBuilder();
@@ -125,5 +133,8 @@ public class MyServerImpl implements Runnable {
         };
     }
 
+    private boolean shouldCloseConnection(String rawRequest) {
+        return rawRequest.toLowerCase().contains("connection: close");
+    }
 
 }
