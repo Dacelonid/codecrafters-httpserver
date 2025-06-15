@@ -1,6 +1,6 @@
 package server.handlers;
 
-import server.httpstructure.HttpRequest;
+import server.httpstructure.httprequest.HttpRequest;
 
 public class GetHandler {
     public Handler chooseHandler(HttpRequest request) {

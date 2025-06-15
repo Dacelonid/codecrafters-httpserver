@@ -2,7 +2,7 @@ package server.handlers;
 
 import server.httpUtils.HttpCodes;
 import server.httpUtils.HttpConstants;
-import server.httpstructure.HttpRequest;
+import server.httpstructure.httprequest.HttpRequest;
 import server.httpstructure.HttpResponse;
 
 import java.io.IOException;

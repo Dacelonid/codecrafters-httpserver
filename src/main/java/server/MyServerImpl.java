@@ -3,7 +3,7 @@ package server;
 import server.handlers.GetHandler;
 import server.handlers.MethodNotAllowedHandler;
 import server.handlers.PostHandler;
-import server.httpstructure.HttpRequest;
+import server.httpstructure.httprequest.HttpRequest;
 import server.httpstructure.HttpResponse;
 
 import java.io.BufferedReader;

@@ -1,7 +1,7 @@
 package server.handlers;
 
 import server.httpUtils.HttpCodes;
-import server.httpstructure.HttpRequest;
+import server.httpstructure.httprequest.HttpRequest;
 import server.httpstructure.HttpResponse;
 
 public class EchoHandler implements Handler{

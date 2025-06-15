@@ -1,6 +1,6 @@
 package server.handlers;
 
-import server.httpstructure.HttpRequest;
+import server.httpstructure.httprequest.HttpRequest;
 import server.httpstructure.HttpResponse;
 
 public interface Handler {

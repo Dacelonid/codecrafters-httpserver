@@ -1,4 +1,4 @@
-package server.httpstructure;
+package server.httpstructure.httprequest;
 
 import server.httpUtils.HttpMethod;
 
