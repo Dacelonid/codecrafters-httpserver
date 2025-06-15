@@ -308,6 +308,131 @@ public class MyServerImplTest {
         assertEquals("apple", fileContents);
     }
 
+    @Test
+    public void fileDownloadWithGzipEncoding(@TempDir Path tempDir) throws IOException, URISyntaxException {
+        if (!local) return;
+
+        HttpConstants.baseDir = tempDir.toString();
+        createFile("gzip.txt", "compressme");
+
+        HttpURLConnection con = new ConnectionBuilder("http://localhost:4221/files/gzip.txt", "GET")
+                .acceptEncoding("gzip").build();
+        String line = readFromConnection(con);
+
+        ExpectedResponse.builder()
+                .statusCode(200)
+                .statusLine("HTTP/1.1 200 OK")
+                .contentLength("30") // Should match actual gzip size of "compressme"
+                .contentType("text/plain")
+                .contentEncoding("gzip")
+                .connection("keep-alive")
+                .body("compressme")
+                .build().assertMatches(con, line);
+    }
+
+    @Test
+    public void echoWithConnectionCloseHeader() throws IOException, URISyntaxException {
+        if (!local) return;
+
+        HttpURLConnection con = new ConnectionBuilder("http://localhost:4221/echo/test", "GET")
+                .connection("close").build();
+        String line = readFromConnection(con);
+
+        ExpectedResponse.builder()
+                .statusCode(200)
+                .statusLine("HTTP/1.1 200 OK")
+                .contentLength("4")
+                .contentType("text/plain")
+                .connection("close")
+                .body("test")
+                .build().assertMatches(con, line);
+    }
+
+
+
+    @Test
+    public void filePostWithConnectionClose(@TempDir Path tempDir) throws IOException, URISyntaxException {
+        if (!local) return;
+
+        HttpConstants.baseDir = tempDir.toString();
+        HttpURLConnection con = new ConnectionBuilder("http://localhost:4221/files/closed", "POST")
+                .doOutput(true)
+                .contentType("text/plain")
+                .contentLength(5)
+                .connection("close")
+                .build();
+
+        try (OutputStream os = con.getOutputStream()) {
+            os.write("data!".getBytes());
+        }
+
+        ExpectedResponse.builder()
+                .statusCode(201)
+                .statusLine("HTTP/1.1 201 Created")
+                .contentLength("7")
+                .body("Created")
+                .contentType("text/plain")
+                .connection("close")
+                .build().assertMatches(con, readFromConnection(con));
+
+        assertEquals("data!", readFile("closed"));
+    }
+
+    @Test
+    public void userAgentWithGzip() throws IOException, URISyntaxException {
+        if (!local) return;
+
+        HttpURLConnection con = new ConnectionBuilder("http://localhost:4221/user-agent", "GET")
+                .acceptEncoding("gzip")
+                .build();
+
+        String line = readFromConnection(con);
+        ExpectedResponse.builder()
+                .statusCode(200)
+                .statusLine("HTTP/1.1 200 OK")
+                .contentType("text/plain")
+                .connection("keep-alive")
+                .contentEncoding("gzip")
+                .body("Java/24.0.1")
+                .contentLength("31")
+                .build().assertMatches(con, line);
+    }
+
+    @Test
+    public void fileDownloadWithInvalidGzipInMiddle(@TempDir Path tempDir) throws IOException, URISyntaxException {
+        if (!local) return;
+
+        HttpConstants.baseDir = tempDir.toString();
+        createFile("weird.gz", "stillplain");
+
+        HttpURLConnection con = new ConnectionBuilder("http://localhost:4221/files/weird.gz", "GET")
+                .acceptEncoding("identity, g-zip, br")
+                .build();
+
+        String line = readFromConnection(con);
+        ExpectedResponse.builder()
+                .statusCode(200)
+                .statusLine("HTTP/1.1 200 OK")
+                .contentType("application/octet-stream")
+                .contentLength("10")
+                .connection("keep-alive")
+                .body("stillplain")
+                .contentEncoding(null)
+                .build().assertMatches(con, line);
+    }
+
+    @Test
+    public void filePathTraversalAttempt(@TempDir Path tempDir) throws IOException, URISyntaxException {
+        if (!local) return;
+
+        HttpConstants.baseDir = tempDir.toString();
+        createFile("safe.txt", "nope");
+
+        HttpURLConnection con = new ConnectionBuilder("http://localhost:4221/files/../safe.txt", "GET").build();
+        assertEquals(404, con.getResponseCode(), "Should not allow path traversal");
+    }
+
+
 
     private String readFromConnection(HttpURLConnection con) throws IOException {
         InputStream stream;
